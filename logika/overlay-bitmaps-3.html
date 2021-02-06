@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Zobrazení CSV</title>
+</head>
+<body>
+	<select name="map" id="map"></select>
+	<input type="text" id="color" placeholder="Barva bodů">
+	<input type="text" id="color2" placeholder="Barva zvýraznění">
+	<button id="konvertuj">Maluj</button>
+	<br>
+	<canvas width="1" height="1"></canvas>
+	<div id="bunka-click"></div>
+	<div id="bunka-hover"></div>
+	<script>
+		var layers = [];
+		var tmp;
+
+		fetch('1data')
+		.then(response => response.json())
+		.then(ar => ar.map(a => `https://ntrophy.nodesite.eu/1data/${a}`))
+		.then(data => tmp = data)
+		.then(() => fetch('2data'))
+		.then(response => response.json())
+		.then(ar => ar.map(a => `https://ntrophy.nodesite.eu/2data/${a}`))
+		.then(data => tmp = [...tmp, ...data])
+		.then(ar => ar.forEach(a => {
+			let opt = document.createElement('option');
+			opt.value = a;
+			opt.innerHTML = a;
+			document.querySelector('#map').appendChild(opt);
+		}));
+
+		document.querySelector('#konvertuj').addEventListener('click', async () => {
+
+			layers.push([
+				await fetch(document.querySelector('#map').value)
+					.then(response => response.text())
+					.then(data => data.split('\n'))
+					.then(data => data.map(a => a.replace(/[^01]+/g, ''))),
+				document.querySelector('#color').value,
+				document.querySelector('#color2').value,
+				document.querySelector('#color').value,
+				document.querySelector('#color2').value,
+			]);
+
+			let canvas = document.querySelector('canvas');
+			let ctx = canvas.getContext('2d');
+
+			for (let n=0; n<layers.length-1; ++n) {
+				let data = layers[n][0];
+				let proposedwidth = data.map(a => a.length).reduce((a, b) => a > b ? a : b);
+				if (proposedwidth > canvas.width) {
+					canvas.width = proposedwidth;
+				}
+				if (data.length > canvas.height) {
+					canvas.height = data.length;
+				}
+				ctx.fillStyle = layers[n][2];
+				for (let y = 0; y < canvas.height; ++y) {
+					for (let x = 0; x < canvas.width; ++x) {
+						if (data[y][x] !== "0") {
+							if (data[y][x] === "1") {
+								ctx.beginPath();
+								ctx.arc(x, y, 3, 0, Math.PI * 2, false);
+								ctx.fill();
+							}
+						}
+					}
+				}
+			}
+			for (let n=0; n<layers.length-1; ++n) {
+				let data = layers[n][0];
+				for (let y = 0; y < canvas.height; ++y) {
+					for (let x = 0; x < canvas.width; ++x) {
+						if (data[y][x] !== "0") {
+							if (data[y][x] === "1") {
+								ctx.fillStyle = layers[n][1];
+							} else {
+								ctx.fillStyle = 'gray';
+							}
+							ctx.fillRect(x, y, 1, 1);
+						}
+					}
+				}
+			}
+
+
+
+			for (let n=layers.length-1; n<layers.length; ++n) {
+				let data = layers[n][0];
+				let proposedwidth = data.map(a => a.length).reduce((a, b) => a > b ? a : b);
+				if (proposedwidth > canvas.width) {
+					canvas.width = proposedwidth;
+				}
+				if (data.length > canvas.height) {
+					canvas.height = data.length;
+				}
+				ctx.fillStyle = layers[n][4];
+				for (let y = 0; y < canvas.height; ++y) {
+					for (let x = 0; x < canvas.width; ++x) {
+						if (data[y][x] !== "0") {
+							if (data[y][x] === "1") {
+								ctx.beginPath();
+								ctx.arc(x, y, 3, 0, Math.PI * 2, false);
+								ctx.fill();
+							}
+						}
+					}
+				}
+			}
+			for (let n=layers.length-1; n<layers.length; ++n) {
+				let data = layers[n][0];
+				for (let y = 0; y < canvas.height; ++y) {
+					for (let x = 0; x < canvas.width; ++x) {
+						if (data[y][x] !== "0") {
+							if (data[y][x] === "1") {
+								ctx.fillStyle = layers[n][3];
+							} else {
+								ctx.fillStyle = 'gray';
+							}
+							ctx.fillRect(x, y, 1, 1);
+						}
+					}
+				}
+			}
+			console.log(layers);
+		});
+
+		document.querySelector('canvas').addEventListener('click', (e => {
+			let x = e.pageX || (e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft);
+			let y = e.pageY || (e.clientY + document.body.scrollTop + document.documentElement.scrollTop);
+			x -= e.target.offsetLeft;
+			y -= e.target.offsetTop;
+			x += 1;
+			y += 1;
+			let alp = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+			{
+				var clickCoordinates = y;
+				while (x) {
+					let tmp = x % alp.length;
+					x -= tmp;
+					clickCoordinates = '' + alp[tmp] + clickCoordinates;
+					x /= alp.length;
+				}
+			}
+			document.querySelector('#bunka-click').innerHTML = `Kliklas na buňku ${clickCoordinates}`;
+		}))
+
+		document.querySelector('canvas').addEventListener('mousemove', (e => {
+			let x = e.pageX || (e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft);
+			let y = e.pageY || (e.clientY + document.body.scrollTop + document.documentElement.scrollTop);
+			x -= e.target.offsetLeft;
+			y -= e.target.offsetTop;
+			x += 1;
+			y += 1;
+			let alp = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+			{
+				var clickCoordinates = y;
+				while (x) {
+					let tmp = x % alp.length;
+					x -= tmp;
+					clickCoordinates = '' + alp[tmp] + clickCoordinates;
+					x /= alp.length;
+				}
+			}
+			document.querySelector('#bunka-hover').innerHTML = `Tvá myš je na buňce ${clickCoordinates}`;
+		}))
+	</script>
+	<table id="obrazky"></table>
+</body>
+</html>

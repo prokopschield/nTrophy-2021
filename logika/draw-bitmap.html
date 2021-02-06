@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Zobrazení CSV</title>
+	<table></table>
+</head>
+<body>
+	<button id="konvertuj">Čáry máry fuk</button>
+	<br>
+	<script>
+		document.querySelector('#konvertuj').addEventListener('click', async () => {
+
+			let trh = document.createElement('tr');
+			let trd = document.createElement('tr');
+			let table = document.querySelector('#obrazky');
+
+			table.appendChild(trh);
+			table.appendChild(trd);
+
+			let slozky = ['1data', '2data'];
+			for (const n in slozky) {
+				const slozka = slozky[n];
+				let soubory = await fetch(slozka)
+					.then(response => response.json());
+				for (const n in soubory) {
+					const soubor = `https://ntrophy.nodesite.eu/${slozka}/${soubory[n]}`;
+					let data = await fetch(soubor)
+						.then(response => response.text())
+						.then(data => data.split('\n'))
+						.then(data => data.map(a => a.replace(/[^01]+/g, '')));
+					let th = document.createElement('th');
+					th.innerHTML = soubor;
+					trh.appendChild(th);
+					let canvas = document.createElement('canvas');
+					let ctx = canvas.getContext('2d');
+					canvas.width = data.map(a => a.length).reduce((a, b) => a > b ? a : b);
+					canvas.height = data.length;
+					ctx.fillStyle = 'yellow';
+					for (let y = 0; y < canvas.height; ++y) {
+						for (let x = 0; x < canvas.width; ++x) {
+							if (data[y][x] !== "0") {
+								if (data[y][x] === "1") {
+									ctx.beginPath();
+									ctx.arc(x, y, 3, 0, Math.PI * 2, false);
+									ctx.fill();
+								}
+							}
+						}
+					}
+					for (let y = 0; y < canvas.height; ++y) {
+						for (let x = 0; x < canvas.width; ++x) {
+							if (data[y][x] !== "0") {
+								if (data[y][x] === "1") {
+									ctx.fillStyle = 'blue';
+								} else {
+									ctx.fillStyle = 'gray';
+								}
+								ctx.fillRect(x, y, 1, 1);
+							}
+						}
+					}
+					let td = document.createElement('td');
+					td.appendChild(canvas);
+					trd.appendChild(td);
+				}
+			};
+		})
+	</script>
+	<table id="obrazky"></table>
+</body>
+</html>
